@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
+import type { Task } from '../types';
 
-// Props are inputs to the component. Here, onCreate is a function passed from parent (App.tsx) to add a new task.
 interface TaskFormProps {
-  onCreate: (name: string, parentId: number | null) => void;
+  onCreate: (name: string, parentDisplayId?: string) => void;
+  allTasks: Task[];
 }
 
-const TaskForm: React.FC<TaskFormProps> = ({ onCreate }) => {
+const TaskForm: React.FC<TaskFormProps> = ({ onCreate, allTasks }) => {
   const [name, setName] = useState('');
-  const [parentIdInput, setParentIdInput] = useState('');
+  const [parentDisplayId, setParentDisplayId] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -15,38 +16,45 @@ const TaskForm: React.FC<TaskFormProps> = ({ onCreate }) => {
       alert('Task name is required!');
       return;
     }
-    const parentId = parentIdInput.trim() ? parseInt(parentIdInput, 10) : null;
-    if (parentId !== null && isNaN(parentId)) {
-      alert('Parent ID must be a number!');
-      return;
-    }
-    onCreate(name, parentId);
+    onCreate(name, parentDisplayId || undefined);
     setName('');
-    setParentIdInput('');
+    setParentDisplayId('');
   };
 
+  // Show available parent options
+  const parentOptions = allTasks.filter(t => !t.parentId).map(t => t.displayId);
+
   return (
-    <form onSubmit={handleSubmit}>
+    <form onSubmit={handleSubmit} style={{ marginBottom: '20px' }}>
       <h2>Create Task</h2>
-      <label>
-        Task Name (required):
-        <input
-          type="text"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-        />
-      </label>
+      <div>
+        <label>
+          Task Name (required): 
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            style={{ marginLeft: '5px', padding: '5px' }}
+          />
+        </label>
+      </div>
+      <div>
+        <label>
+          Parent Task ID (optional, e.g., 1, 1.1): 
+          <input
+            type="text"
+            value={parentDisplayId}
+            onChange={(e) => setParentDisplayId(e.target.value)}
+            placeholder="e.g., 1 or 1.1"
+            style={{ marginLeft: '5px', padding: '5px' }}
+          />
+        </label>
+        <small style={{ color: '#666', display: 'block' }}>
+          Available parents: {parentOptions.join(', ') || 'None yet'}
+        </small>
+      </div>
       <br />
-      <label>
-        Parent Task ID (optional):
-        <input
-          type="text"
-          value={parentIdInput}
-          onChange={(e) => setParentIdInput(e.target.value)}
-        />
-      </label>
-      <br />
-      <button type="submit">Create Task</button>
+      <button type="submit" style={{ padding: '8px 16px' }}>Create Task</button>
     </form>
   );
 };

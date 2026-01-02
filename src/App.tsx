@@ -2,50 +2,74 @@ import React, { useState } from 'react';
 import TaskForm from './components/TaskForm';
 import TaskList from './components/TaskList';
 import type{ Task } from './types';
-import './App.css'; // Optional: For styles
+import './App.css';
 
 const App: React.FC = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [nextId, setNextId] = useState(1);
 
-  // Function to check for circular dependencies (cycle in parent chain).
-  const hasCycleInChain = (proposedParentId: number): boolean => {
-    const visited = new Set<number>();
-    let current: number | null = proposedParentId;
-    while (current !== null) {
-      if (visited.has(current)) {
-        return true; // Cycle detected
-      }
-      visited.add(current);
-      const parentTask = tasks.find((t) => t.id === current);
-      if (!parentTask) {
-        return false; // Should not happen if parent exists
-      }
-      current = parentTask.parentId;
+  // Generate displayId like 1, 1.1, 1.1.1 based on parent
+  const generateDisplayId = (parentDisplayId?: string): string => {
+    if (!parentDisplayId) {
+      // New top-level task
+      const topLevelCount = tasks.filter(t => !t.parentId).length;
+      return (topLevelCount + 1).toString();
     }
-    return false;
+    
+    // Find parent task
+    const parentTask = tasks.find(t => t.displayId === parentDisplayId);
+    if (!parentTask) return 'ERROR';
+    
+    // Count existing children of this parent
+    const childCount = tasks.filter(t => t.parentId === parentTask.id).length;
+    return `${parentDisplayId}.${childCount + 1}`;
   };
 
-  const handleCreate = (name: string, parentId: number | null) => {
-    if (parentId !== null) {
-      const parentExists = tasks.some((t) => t.id === parentId);
-      if (!parentExists) {
-        alert('Parent Task ID does not exist!');
+  // Find task by displayId
+  const findTaskByDisplayId = (displayId: string): Task | null => {
+    return tasks.find(t => t.displayId === displayId) || null;
+  };
+
+  const handleCreate = (name: string, parentDisplayId?: string) => {
+    let targetParentId: number | null = null;
+
+    if (parentDisplayId) {
+      const parentTask = findTaskByDisplayId(parentDisplayId);
+      if (!parentTask) {
+        alert(`Parent Task ID "${parentDisplayId}" does not exist!`);
         return;
       }
-      if (hasCycleInChain(parentId)) {
-        alert('Circular dependency detected in the parent chain!');
+      targetParentId = parentTask.id;
+      
+      // Check for circular dependency
+      if (hasCycle(targetParentId, new Set())) {
+        alert('Circular dependency detected!');
         return;
       }
     }
+
+    const displayId = generateDisplayId(parentDisplayId);
     const newTask: Task = {
       id: nextId,
+      displayId,
       name,
       status: 'IN_PROGRESS',
-      parentId,
+      parentId: targetParentId,
     };
+
     setTasks([...tasks, newTask]);
     setNextId(nextId + 1);
+  };
+
+  const hasCycle = (taskId: number, visiting: Set<number>): boolean => {
+    if (visiting.has(taskId)) return true;
+    visiting.add(taskId);
+    
+    const task = tasks.find(t => t.id === taskId);
+    if (task && task.parentId) {
+      return hasCycle(task.parentId, visiting);
+    }
+    return false;
   };
 
   const handleToggleStatus = (id: number) => {
@@ -61,7 +85,7 @@ const App: React.FC = () => {
   return (
     <div className="App">
       <h1>CheckPointSpot Tasking System</h1>
-      <TaskForm onCreate={handleCreate} />
+      <TaskForm onCreate={handleCreate} allTasks={tasks} />
       <TaskList tasks={tasks} onToggleStatus={handleToggleStatus} />
     </div>
   );

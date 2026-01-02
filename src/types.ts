@@ -1,8 +1,6 @@
-// This file defines the shape of a Task object for TypeScript type checking.
-// It helps prevent errors like assigning wrong types (e.g., string to number).
-
 export interface Task {
-  id: number;
+  id: number;           // Internal unique number (1,2,3...)
+  displayId: string;    // Visual ID like "1", "1.1", "1.1.1"
   name: string;
   status: 'IN_PROGRESS' | 'DONE';
   parentId: number | null;

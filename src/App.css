@@ -1,21 +1,72 @@
 .App {
-  text-align: center;
-  max-width: 800px;
+  max-width: 1200px;
   margin: 0 auto;
   padding: 20px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
-form {
-  margin-bottom: 20px;
+h1 {
+  color: #2c3e50;
+  text-align: center;
 }
 
-ul {
-  list-style-type: none;
-  padding: 0;
+h2 {
+  color: #34495e;
+  border-bottom: 2px solid #3498db;
+  padding-bottom: 10px;
 }
 
-li {
-  margin: 10px 0;
-  border: 1px solid #ccc;
-  padding: 10px;
+form div {
+  margin-bottom: 15px;
+}
+
+form label {
+  display: block;
+  font-weight: 500;
+}
+
+form input, form select {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+button {
+  background: #3498db;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+button:hover {
+  background: #2980b9;
+}
+
+table {
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+th {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  font-weight: 600;
+}
+
+tbody tr:hover {
+  background-color: #e8f4f8 !important;
+}
+
+strong {
+  color: #2c3e50;
+}
+
+small {
+  font-size: 12px;
 }
