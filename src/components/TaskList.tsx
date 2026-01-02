@@ -17,21 +17,22 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onToggleStatus }) => {
   const [filter, setFilter] = useState<'ALL' | 'IN_PROGRESS' | 'DONE' | 'COMPLETE'>('ALL');
   const [expanded, setExpanded] = useState<Set<number>>(new Set());
 
-  // Get top-level tasks (no parent)
-  const topLevelTasks = tasks.filter(task => task.parentId === null);
+  // Build hierarchy recursively - now includes the root task itself
+  const buildHierarchy = (task: Task): Task[] => {
+    const children = tasks
+      .filter(t => t.parentId === task.id)
+      .sort((a, b) => a.displayId.localeCompare(b.displayId));
 
-  // Build hierarchy recursively
-  const buildHierarchy = (parentId: number | null, level: number = 0): Task[] => {
-    return tasks
-      .filter(task => task.parentId === parentId)
-      .sort((a, b) => a.displayId.localeCompare(b.displayId))
-      .flatMap(task => {
-        const children = buildHierarchy(task.id, level + 1);
-        return [task, ...children];
-      });
+    const subTrees = children.flatMap(child => buildHierarchy(child));
+
+    return [task, ...subTrees];
   };
 
-  const allHierarchicalTasks = topLevelTasks.flatMap(task => buildHierarchy(task.id));
+  // Build full tree starting from all top-level tasks
+  const allHierarchicalTasks = tasks
+    .filter(task => task.parentId === null)
+    .sort((a, b) => a.displayId.localeCompare(b.displayId))
+    .flatMap(root => buildHierarchy(root));
 
   // Filter logic
   const filteredTasks = allHierarchicalTasks.filter((task) => {
