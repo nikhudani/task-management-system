@@ -14,12 +14,10 @@ export default function TaskItem({ task }: { task: Task }) {
     <li>
       <input
         type="checkbox"
-        checked={task.status === 'DONE'}
-        onChange={() =>
-          dispatch({ type: 'TOGGLE_TASK', id: task.id })
-        }
-      />
-      {task.name} — {task.status}
+        checked={task.status === 'DONE' || task.status === 'COMPLETE'}
+        onChange={() => dispatch({ type: 'TOGGLE_TASK', id: task.id })}
+        />
+        {task.name} — {task.status}
 
       {children.length > 0 && (
         <ul style={{ marginLeft: '20px' }}>
