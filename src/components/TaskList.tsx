@@ -17,24 +17,22 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onToggleStatus }) => {
   const [filter, setFilter] = useState<'ALL' | 'IN_PROGRESS' | 'DONE' | 'COMPLETE'>('ALL');
   const [expanded, setExpanded] = useState<Set<number>>(new Set());
 
-  // Build hierarchy recursively - now includes the root task itself
+  // Build full hierarchy including parents
   const buildHierarchy = (task: Task): Task[] => {
     const children = tasks
       .filter(t => t.parentId === task.id)
       .sort((a, b) => a.displayId.localeCompare(b.displayId));
 
     const subTrees = children.flatMap(child => buildHierarchy(child));
-
     return [task, ...subTrees];
   };
 
-  // Build full tree starting from all top-level tasks
   const allHierarchicalTasks = tasks
     .filter(task => task.parentId === null)
     .sort((a, b) => a.displayId.localeCompare(b.displayId))
     .flatMap(root => buildHierarchy(root));
 
-  // Filter logic
+  // Filter tasks
   const filteredTasks = allHierarchicalTasks.filter((task) => {
     if (filter === 'ALL') return true;
     if (filter === 'IN_PROGRESS') return task.status === 'IN_PROGRESS';
@@ -45,23 +43,44 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onToggleStatus }) => {
 
   const toggleExpand = (id: number) => {
     const newExpanded = new Set(expanded);
-    if (newExpanded.has(id)) {
-      newExpanded.delete(id);
-    } else {
-      newExpanded.add(id);
-    }
+    if (newExpanded.has(id)) newExpanded.delete(id);
+    else newExpanded.add(id);
     setExpanded(newExpanded);
   };
 
   const hasChildren = (taskId: number) => tasks.some(t => t.parentId === taskId);
 
-  const getIndentStyle = (level: number): React.CSSProperties => ({
+  const getIndentStyle = (level: number) => ({
     paddingLeft: `${level * 30 + 10}px`,
-    position: 'relative'
   });
 
-  const getDisplayStatus = (task: Task) => 
-    isComplete(task, tasks) ? 'COMPLETE' : task.status;
+  // Get dependency stats for a task
+  const getDependencyStats = (task: Task) => {
+    const directChildren = tasks.filter(t => t.parentId === task.id);
+    const total = directChildren.length;
+    const done = directChildren.filter(c => c.status === 'DONE').length;
+    const complete = directChildren.filter(c => isComplete(c, tasks)).length;
+    return { total, done, complete };
+  };
+
+  const getDisplayStatus = (task: Task) => {
+    const baseStatus = isComplete(task, tasks) ? 'COMPLETE' : task.status;
+    const hasDeps = hasChildren(task.id);
+
+    if (!hasDeps) return baseStatus;
+
+    const { total, done, complete } = getDependencyStats(task);
+    
+    return (
+      <div style={{ lineHeight: '1.4' }}>
+        <strong>{baseStatus}</strong>
+        <br />
+        <small style={{ color: '#555', fontSize: '12px' }}>
+          Dependencies: {done}/{total} done, {complete}/{total} complete
+        </small>
+      </div>
+    );
+  };
 
   return (
     <div>
@@ -84,11 +103,11 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onToggleStatus }) => {
 
       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
         <thead>
-          <tr style={{ backgroundColor: '#f5f5f5' }}>
-            <th style={{ border: '1px solid #ddd', padding: '12px', textAlign: 'left' }}>ID</th>
-            <th style={{ border: '1px solid #ddd', padding: '12px', textAlign: 'left' }}>Name</th>
-            <th style={{ border: '1px solid #ddd', padding: '12px', textAlign: 'center' }}>Status</th>
-            <th style={{ border: '1px solid #ddd', padding: '12px', textAlign: 'center' }}>Action</th>
+          <tr style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
+            <th style={{ border: '1px solid #ddd', padding: '12px', textAlign: 'left', color: 'white' }}>ID</th>
+            <th style={{ border: '1px solid #ddd', padding: '12px', textAlign: 'left', color: 'white' }}>Name</th>
+            <th style={{ border: '1px solid #ddd', padding: '12px', textAlign: 'center', color: 'white' }}>Status</th>
+            <th style={{ border: '1px solid #ddd', padding: '12px', textAlign: 'center', color: 'white' }}>Action</th>
           </tr>
         </thead>
         <tbody>
@@ -97,48 +116,45 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onToggleStatus }) => {
             const isExpanded = expanded.has(task.id);
 
             return (
-              <React.Fragment key={task.id}>
-                <tr style={{ backgroundColor: level % 2 ? '#f9f9f9' : 'white' }}>
-                  <td style={{ border: '1px solid #ddd', padding: '8px', ...getIndentStyle(level) }}>
-                    {hasChildren(task.id) && (
-                      <span 
-                        style={{ cursor: 'pointer', marginRight: '8px', fontWeight: 'bold' }}
-                        onClick={() => toggleExpand(task.id)}
-                      >
-                        {isExpanded ? '▼' : '▶'}
-                      </span>
-                    )}
-                    <strong>{task.displayId}</strong>
-                  </td>
-                  <td style={{ border: '1px solid #ddd', padding: '8px', ...getIndentStyle(level) }}>
-                    {task.name}
-                  </td>
-                  <td style={{ 
-                    border: '1px solid #ddd', 
-                    padding: '8px', 
-                    textAlign: 'center',
-                    fontWeight: getDisplayStatus(task) === 'COMPLETE' ? 'bold' : 'normal',
-                    color: getDisplayStatus(task) === 'COMPLETE' ? 'green' : 'inherit'
-                  }}>
-                    {getDisplayStatus(task)}
-                  </td>
-                  <td style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'center' }}>
-                    <input
-                      type="checkbox"
-                      checked={task.status === 'DONE'}
-                      onChange={() => onToggleStatus(task.id)}
-                      style={{ transform: 'scale(1.2)' }}
-                    />
-                  </td>
-                </tr>
-              </React.Fragment>
+              <tr key={task.id} style={{ backgroundColor: level % 2 ? '#f9f9f9' : 'white' }}>
+                <td style={{ border: '1px solid #ddd', padding: '8px', ...getIndentStyle(level) }}>
+                  {hasChildren(task.id) && (
+                    <span 
+                      style={{ cursor: 'pointer', marginRight: '8px', fontWeight: 'bold', userSelect: 'none' }}
+                      onClick={() => toggleExpand(task.id)}
+                    >
+                      {isExpanded ? '▼' : '▶'}
+                    </span>
+                  )}
+                  <strong>{task.displayId}</strong>
+                </td>
+                <td style={{ border: '1px solid #ddd', padding: '8px' }}>
+                  {task.name}
+                </td>
+                <td style={{ 
+                  border: '1px solid #ddd', 
+                  padding: '12px', 
+                  textAlign: 'center',
+                  verticalAlign: 'middle'
+                }}>
+                  {getDisplayStatus(task)}
+                </td>
+                <td style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'center' }}>
+                  <input
+                    type="checkbox"
+                    checked={task.status === 'DONE'}
+                    onChange={() => onToggleStatus(task.id)}
+                    style={{ transform: 'scale(1.3)', cursor: 'pointer' }}
+                  />
+                </td>
+              </tr>
             );
           })}
         </tbody>
       </table>
-      
+
       {filteredTasks.length === 0 && (
-        <p style={{ textAlign: 'center', color: '#666', marginTop: '20px' }}>
+        <p style={{ textAlign: 'center', color: '#666', marginTop: '20px', fontStyle: 'italic' }}>
           No tasks match the selected filter.
         </p>
       )}
