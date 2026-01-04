@@ -147,7 +147,7 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onToggleStatus, onEditTask }
           Filter by Status:
           <select
             value={filter}
-            onChange={(e) => { setFilter(e.target.value as any); setCurrentPage(1); }}
+            onChange={(e) => { setFilter(e.target.value as 'ALL' | 'IN_PROGRESS' | 'DONE' | 'COMPLETE'); setCurrentPage(1); }}
             style={{ marginLeft: '10px', padding: '8px' }}
           >
             <option value="ALL">ALL</option>

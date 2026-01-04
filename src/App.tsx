@@ -151,7 +151,7 @@ const App: React.FC = () => {
 
       const task = { ...newTasks[index] };
       let parentChanged = false;
-      let oldParentId = task.parentId;
+      const oldParentId = task.parentId;
       let newParentId: number | null = oldParentId;
 
       // Update name if provided

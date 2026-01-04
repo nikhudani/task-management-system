@@ -1,4 +1,3 @@
-// src/types.ts
 export interface Task {
   id: number;
   displayId: string;

@@ -58,9 +58,6 @@ function propagateStatus(tasks: Task[]): Task[] {
   return updatedTasks;
 }
 
-
-
-
 export function TaskProvider({ children }: { children: React.ReactNode }) {
   const [tasks, dispatch] = useReducer(
     reducer,
